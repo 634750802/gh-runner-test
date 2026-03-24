@@ -1,0 +1,49 @@
+name: Rust Multi-Arch Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: arc-runner-amd64-c6i-2xl
+            target: x86_64-unknown-linux-gnu
+          - arch: arm64
+            runner: arc-runner-arm64-c7g-2xl
+            target: aarch64-unknown-linux-gnu
+    runs-on: ${{ matrix.runner }}
+    name: Build (${{ matrix.arch }})
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Rust version
+        run: |
+          rustc --version
+          cargo --version
+          uname -m
+
+      - name: Init demo project
+        run: cargo init --name demo .
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Run tests
+        run: cargo test --release
+
+      - name: Show binary info
+        run: |
+          ls -lh target/release/demo
+          file target/release/demo
