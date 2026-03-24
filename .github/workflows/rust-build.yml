@@ -21,7 +21,7 @@ jobs:
     name: Build (${{ matrix.arch }})
     steps:
       - name: Install build dependencies
-        run: sudo apt-get update && sudo apt-get install -y build-essential pkg-config libssl-dev git
+        run: sudo apt-get update && sudo apt-get install -y build-essential pkg-config libssl-dev git cmake
 
       - name: Install Rust
         run: |
@@ -30,27 +30,28 @@ jobs:
 
       - name: System info
         run: |
+          echo "=== Architecture ==="
           uname -m
+          echo "=== CPU cores ==="
           nproc
+          echo "=== Memory ==="
           free -h
+          echo "=== Rust ==="
           rustc --version
+          echo "=== CPU model ==="
+          lscpu | grep "Model name" || true
 
-      - name: Clone ripgrep
-        run: git clone --depth 1 --branch 14.1.1 https://github.com/BurntSushi/ripgrep.git
+      - name: Clone cargo-nextest (large project)
+        run: git clone --depth 1 --branch cargo-nextest-0.9.96 https://github.com/nextest-rs/nextest.git
 
-      - name: Build ripgrep (release)
+      - name: Build cargo-nextest (release)
         run: |
-          cd ripgrep
-          echo "::group::Build start"
-          time cargo build --release 2>&1
-          echo "::endgroup::"
-
-      - name: Test ripgrep
-        run: |
-          cd ripgrep
-          cargo test --release 2>&1 | tail -20
+          cd nextest
+          echo "Build start: $(date)"
+          time cargo build --release -p cargo-nextest 2>&1
+          echo "Build end: $(date)"
 
       - name: Binary info
         run: |
-          ls -lh ripgrep/target/release/rg
-          ripgrep/target/release/rg --version
+          ls -lh nextest/target/release/cargo-nextest
+          nextest/target/release/cargo-nextest --version
