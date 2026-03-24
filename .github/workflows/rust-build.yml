@@ -10,6 +10,7 @@ on:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - arch: amd64
@@ -19,33 +20,37 @@ jobs:
     runs-on: ${{ matrix.runner }}
     name: Build (${{ matrix.arch }})
     steps:
-      - uses: actions/checkout@v4
-
       - name: Install build dependencies
-        run: |
-          sudo apt-get update && sudo apt-get install -y build-essential pkg-config libssl-dev
+        run: sudo apt-get update && sudo apt-get install -y build-essential pkg-config libssl-dev git
 
       - name: Install Rust
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
-      - name: Rust version
+      - name: System info
         run: |
-          rustc --version
-          cargo --version
           uname -m
+          nproc
+          free -h
+          rustc --version
 
-      - name: Init demo project
-        run: cargo init --name demo .
+      - name: Clone ripgrep
+        run: git clone --depth 1 --branch 14.1.1 https://github.com/BurntSushi/ripgrep.git
 
-      - name: Build
-        run: cargo build --release
-
-      - name: Run tests
-        run: cargo test --release
-
-      - name: Show binary info
+      - name: Build ripgrep (release)
         run: |
-          ls -lh target/release/demo
-          file target/release/demo
+          cd ripgrep
+          echo "::group::Build start"
+          time cargo build --release 2>&1
+          echo "::endgroup::"
+
+      - name: Test ripgrep
+        run: |
+          cd ripgrep
+          cargo test --release 2>&1 | tail -20
+
+      - name: Binary info
+        run: |
+          ls -lh ripgrep/target/release/rg
+          ripgrep/target/release/rg --version
