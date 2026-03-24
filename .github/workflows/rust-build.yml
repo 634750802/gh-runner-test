@@ -14,14 +14,16 @@ jobs:
         include:
           - arch: amd64
             runner: arc-runner-amd64-c6i-2xl
-            target: x86_64-unknown-linux-gnu
           - arch: arm64
             runner: arc-runner-arm64-c7g-2xl
-            target: aarch64-unknown-linux-gnu
     runs-on: ${{ matrix.runner }}
     name: Build (${{ matrix.arch }})
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          apt-get update && apt-get install -y build-essential pkg-config libssl-dev
 
       - name: Install Rust
         run: |
